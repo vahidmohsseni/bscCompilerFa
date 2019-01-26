@@ -1,0 +1,5 @@
+adad_sahih a = 2;
+Adad_Ashar_bozorg b = 2.1;
+agar(a > 1) {
+Bargardoon 0;
+}

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Compiler Project">
+    <meta name="author" content="Alireza_SN">
+
+    <title> Compiler Project </title>
+    <style>
+        table {
+            font-family: arial, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        td, th {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+
+        tr:nth-child(even) {
+            background-color: #dddddd;
+        }
+    </style>
+</head>
+
+<body>
+    {% if method == 'GET' %}
+        <form action="/" method="post">
+            <p>{{ form.csrf_token }}</p>
+            <p>{{ form.upload_file }}</p>
+            <p>{{ form.code_text(rows='20',cols='100') }}</p>
+            <p>{{ form.submit_btn }}</p>
+        </form>
+    {% endif %}
+    {% if method == 'POST' %}
+        <table>
+            <tr>
+                <th>line</th>
+                <th>column</th>
+                <th>text</th>
+            </tr>
+            {% for item in items %}
+                <TR>
+                    <TD class="c1">{{item.line}}</TD>
+                    <TD class="c2">{{item.column}}</TD>
+                    <TD class="c3">{{item.text}}</TD>
+                </TR>
+            {% endfor %}
+        </table>
+    {% endif %}
+
+</body>
+<script>
+
+const input = document.getElementById("upload_file")
+const reader = new FileReader();
+
+input.onchange = function() {
+  const file = input.files[0];
+  reader.readAsText(file);
+};
+
+reader.onload = function(e) {
+  var textArea = document.getElementById("code_text");
+    textArea.value = e.target.result;
+};
+
+</script>
+</html>
