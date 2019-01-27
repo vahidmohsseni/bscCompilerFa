@@ -1,9 +1,8 @@
 # Compiler-Project
 Compiler Course Project Fall-2019
+
 Thanks to AliReza Heydari
 
-
-Compile with this Command : antlr4 -Dlanguage=Python2 Project.g4
 
 ## Install graphviz
 graphviz is used to plot syntax tree of input file
