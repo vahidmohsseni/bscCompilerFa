@@ -1,0 +1,12 @@
+MainClass=1
+ClassDeclaration=2
+VarDeclaration=3
+MethodDeclaration=4
+Type=5
+Statement=6
+Experession=7
+Temp=8
+Digit=9
+LiteralInteger=10
+Letter=11
+Identifier=12

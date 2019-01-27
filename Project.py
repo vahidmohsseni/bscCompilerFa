@@ -5,10 +5,13 @@ import jinja2
 from UI.forms.InputForm import InputForm
 from UI.forms.TokensForm import TokensForm
 from antlr4 import *
-from ProjectLexer import ProjectLexer
-from ProjectParser import ProjectParser
-from ProjectErrorListener import ProjectLexerErrorListener, ProjectParserErrorListener, CompilerException
-from ProjectPrintListener import ProjectPrintListener
+# from ProjectLexer import ProjectLexer
+from MiniJavaLexer import MiniJavaLexer
+# from ProjectParser import ProjectParser
+from MiniJavaParser import MiniJavaParser
+# from ProjectErrorListener import ProjectLexerErrorListener, ProjectParserErrorListener, CompilerException
+from MiniJavaErrorListener import LexerErrorListener, ParserErrorListener, CompilerException
+# from ProjectPrintListener import ProjectPrintListener
 from antlr4.error.ErrorListener import ErrorListener
 from flask import Flask, url_for, render_template, request, flash, redirect
 
@@ -36,13 +39,15 @@ def open_main_page():
 
         input_form = InputForm()
         code = input_form.code_text.data
-        file_name = input_form.upload_file.data
+        file_name = "test"
 
         ############## LEXER PART ##############
 
-        lexer = ProjectLexer(InputStream(code))
+        # lexer = ProjectLexer(InputStream(code))
+        lexer = MiniJavaLexer(InputStream(code))
         lexer.removeErrorListeners()
-        lexer.addErrorListener(ProjectLexerErrorListener())
+        # lexer.addErrorListener(ProjectLexerErrorListener())
+        lexer.addErrorListener(LexerErrorListener())
         stream = CommonTokenStream(lexer)
         tokens = []
         lexer_errors = []
@@ -64,10 +69,14 @@ def open_main_page():
 
         ############## PARSER PART ##############
 
-        parser = ProjectParser(stream)
+        # parser = ProjectParser(stream)
+        parser = MiniJavaParser(stream)
         parser.removeErrorListeners()
-        parser.addErrorListener(ProjectParserErrorListener());
-        project_tree = parser.program()
+        # parser.addErrorListener(ProjectParserErrorListener())
+        parser.addErrorListener(ParserErrorListener())
+        # project_tree = parser.program()
+        project_tree = parser.goal()
+
         project_printer = ProjectPrintListener(file_name)
         project_walker = ParseTreeWalker()
         project_walker.walk(project_printer, project_tree)
