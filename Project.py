@@ -1,108 +1,108 @@
-import sys
-import os
-import subprocess
-import jinja2
-from UI.forms.InputForm import InputForm
-from UI.forms.TokensForm import TokensForm
+# -*- coding: utf-8 -*-
+
+import os, sys, re
 from antlr4 import *
-# from ProjectLexer import ProjectLexer
-from MiniJavaLexer import MiniJavaLexer
-# from ProjectParser import ProjectParser
-from MiniJavaParser import MiniJavaParser
-# from ProjectErrorListener import ProjectLexerErrorListener, ProjectParserErrorListener, CompilerException
-from MiniJavaErrorListener import LexerErrorListener, ParserErrorListener, CompilerException
-# from ProjectPrintListener import ProjectPrintListener
-from antlr4.error.ErrorListener import ErrorListener
-from flask import Flask, url_for, render_template, request, flash, redirect
+from antlr4.error import ErrorListener
+import argparse
 
-project_directory = os.path.dirname(os.path.abspath(__file__))
-app = Flask(__name__, static_folder=project_directory + '/UI/static')
+if __name__ is not None and "." in __name__:
+	from .MiniJavaParser import MiniJavaParser
+	from .MiniJavaLexer import MiniJavaLexer
+	from .MiniJavaVisitor import MiniJavaVisitor
+	from .MiniJavaListener import MiniJavaListener
+	from .MiniJavaError_Presenter import MiniJava_ErrorListener
+	from .MiniJavaSemanticAnalysis import *
+	from .MiniJavaASTBuilder import *
+	from .utilities import *
+else:
+	from MiniJavaParser import MiniJavaParser
+	from MiniJavaLexer import MiniJavaLexer
+	from MiniJavaVisitor import MiniJavaVisitor
+	from MiniJavaListener import MiniJavaListener
+	from MiniJavaError_Presenter import MiniJava_ErrorListener
+	from MiniJavaSemanticAnalysis import *
+	from MiniJavaASTBuilder import *
+	from utilities import *
 
-my_loader = jinja2.ChoiceLoader([
-    app.jinja_loader,
-    jinja2.FileSystemLoader(project_directory + '/UI/templates'),
-])
-app.jinja_loader = my_loader
 
-app.secret_key = "Compiler Lab Project"
+def semantic_check(parser_ret):
+	visitor = My_Vistor()
+	visitor.visit(parser_ret)
 
 
-@app.route('/', methods=['GET', 'POST'])
-def open_main_page():
+def draw(treelist, name):
+	draw_pic(treelist, name)
+	return treelist
 
-    if request.method == 'GET':
 
-        input_form = InputForm()
-        return render_template('index.html', form=input_form, method='GET')
+def process(args):
+	data = open(args.input_file).read()
+	input = InputStream(data)
+	lexer = MiniJavaLexer(input)
+	stream = CommonTokenStream(lexer)
+	parser = MiniJavaParser(stream)
+	# setup the error listener
+	parser.removeErrorListeners()
+	parser.addErrorListener(MiniJava_ErrorListener())  # ()!!!
+	tree = parser.goal()
+	# semantic analysis
 
-    if request.method == 'POST':
+	try:
+		semantic_check(tree)
+	except:
+		print('Error during semantic check')
+	treelist = TreeList.toStringTreeList(tree, recog=parser)
 
-        input_form = InputForm()
-        code = input_form.code_text.data
-        file_name = "test"
+	if not os.path.exists(args.output_dir):
+		os.makedirs(args.output_dir)
 
-        ############## LEXER PART ##############
+	file_name = args.input_file.split('/')[-1].split('.')[-2]
 
-        # lexer = ProjectLexer(InputStream(code))
-        lexer = MiniJavaLexer(InputStream(code))
-        lexer.removeErrorListeners()
-        # lexer.addErrorListener(ProjectLexerErrorListener())
-        lexer.addErrorListener(LexerErrorListener())
-        stream = CommonTokenStream(lexer)
-        tokens = []
-        lexer_errors = []
-        items = []
-        while True:
-            try:
-                next_token = lexer.nextToken()
-                if next_token.type == next_token.EOF:
-                    break
-                tokens.append((lexer.symbolicNames[next_token.type], next_token))
-                an_item=dict(line=str(next_token.line),column=str(next_token.column),text=str(next_token.text))
-            	items.append(an_item)
-            except CompilerException as e:
-                lexer_errors.append(e)
-                lexer.recover(e)
+	if args.cst:
+		cst_image = os.path.join(args.output_dir, file_name + '_cst')
+		cst_image = os.path.join(os.path.abspath(os.path.curdir), cst_image)
+		print(cst_image)
+		draw(treelist, cst_image)
+		# print('* CST image saved at %s.' % cst_image)
+	if args.ast:
+		ast_image = os.path.join(args.output_dir, file_name + '_ast')
+		visitor = AST_Builder()
+		visitor.visit(tree)
+		res = visitor.tree_list
+		draw(res, ast_image)
+		# print('* AST image saved at %s.' % ast_image)
 
-        print 'tokens : ' , tokens
-        print 'lexer errors : ' , lexer_errors
+	return tree
 
-        ############## PARSER PART ##############
 
-        # parser = ProjectParser(stream)
-        parser = MiniJavaParser(stream)
-        parser.removeErrorListeners()
-        # parser.addErrorListener(ProjectParserErrorListener())
-        parser.addErrorListener(ParserErrorListener())
-        # project_tree = parser.program()
-        project_tree = parser.goal()
+def main():
 
-        project_printer = ProjectPrintListener(file_name)
-        project_walker = ParseTreeWalker()
-        project_walker.walk(project_printer, project_tree)
-        project_bytecode = project_printer.get_bytecode()
-        parser_errors = []
-        parser_errors = parser._listeners[-1].errors
-        print 'parser errors : ' , parser_errors
-        if not lexer_errors and not parser_errors:
-        	if not os.path.exists('output'):
-        		os.mkdir('output')
-    		bytecode_file = os.path.join('output', file_name + '.bc')
+	aparser = argparse.ArgumentParser()
 
-    		with open(bytecode_file, 'w') as f:
-        		f.write(project_bytecode)
+	aparser.add_argument('--input_file', '-i', type=str, default=None,
+	                     help='minijava file for parsing')
+	aparser.add_argument('--cst', action='store_true', default=False,
+	                     help='show parse tree')
+	aparser.add_argument('--ast', action='store_true', default=False,
+	                     help='show abstract syntax tree')
+	aparser.add_argument('--output_dir', '-o', type=str, default='output/',
+	                     help='output directory of ast/cst trees')
 
-    		p = subprocess.Popen(['java', '-jar', 'jasmin.jar', '-d', 'output', bytecode_file], 
-                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    		p = p.communicate()
-    		if p[0]:
-        		print p[0]
-    		if p[1]:
-        		print p[1]
-        tokens_form = TokensForm()
-        return render_template('index.html', items=items, method='POST')
+	args = aparser.parse_args()
+
+	print('* Working...')
+	if os.path.exists(args.input_file) and os.path.isfile(args.input_file):
+		process(args)
+	else:
+		print("[ERROR] file: %s not exist" % os.path.normpath(args.input_file))
+
+	print('* Done.')
 
 
 if __name__ == '__main__':
-    app.debug = True
-    app.run()
+	''' 
+	```bash
+	python3 Project.py -i testfiles/Factorial.java --ast --cst
+	```
+	'''
+	main()

@@ -5,6 +5,9 @@ Thanks to AliReza Heydari
 
 Compile with this Command : antlr4 -Dlanguage=Python2 Project.g4
 
+## Install graphviz
+graphviz is used to plot syntax tree of input file
+```$ sudo apt install graphviz```
 
 ## Install Antlr
 source of installation is [https://github.com/antlr/antlr4](https://github.com/antlr/antlr4/blob/master/doc/getting-started.md)
@@ -61,15 +64,19 @@ ANTLR Parser Generator Version 4.7.1
 NOTE: this step is optional!
 After installing `antlr4` you should generate lexer and parser codes using `antlr4`.
 Use the following command:
-```$ antlr4 -Dlanguage=Python2 MiniJava.g4```
+```$ antlr4 -Dlanguage=Python3 MiniJava.g4```
 
 
 ## install project requirements
 to install the requirements of project use following command:
-```pip install -r requirements.txt```
+```$ pip install -r requirements.txt```
 
 ## run
-```python Project.py```
+show help:
+```$ python3 Project.py -h```
 
-in browser:
-type address `http://localhost:5000` and upload a file to compile.
+The flag `--ast` stores Abstract Syntax Tree in `output` directory.
+the flag `--cst` stores Complete parse tree in `output` directory.
+
+Examples:
+```$ python3 Project.py -i testfiles/Factorial.java --ast --cst```

@@ -1,46 +1,125 @@
 grammar MiniJava;
 
-goal : MainClass ( ClassDeclaration ) * ;
-MainClass : 'class' Identifier '{' 'public' 'static' 'void' 'main' '(' 'String' '['']' Identifier ')' '{' Statement '}' '}' ;
-ClassDeclaration : 'class' Identifier ('extends' Identifier )?'{'(VarDeclaration)*(MethodDeclaration)* '}' ;
+goal    : mainClass ( classDeclaration )* EOF
+        ;
 
-VarDeclaration : Type Identifier';' ;
+mainClass   : 'class' Identifier '{' 'public' 'static' 'void' 'main' '(' 'String' '[' ']' Identifier ')' '{' statement '}' '}'
+            #mainclass
+            ;
 
-MethodDeclaration : 'public' Type Identifier '(' (Type Identifier (',' Type Identifier)* )? ')' '{' (VarDeclaration)* (Statement)* 'return' Experession ';' '}' ;
+classDeclaration    : 'class' Identifier ('extends' Identifier)? '{' (varDeclaration)* (methodDeclaration)* '}'
+                    #dec_class
+                    ;
 
-Type : 'int' '['']' | 'boolean' | 'int' | Identifier ;
+varDeclaration  : mtype Identifier ';'
+                #dec_var
+                ;
 
-Statement 
-            : '{' (Statement)* '}' 
-            | 'if' '(' Experession ')' Statement 'else' Statement
-            | 'while' '(' Experession ')' Statement
-            | 'System.out.println' '(' Experession ')' ';'
-            | Identifier '=' Experession ';'
-            | Identifier '[' Experession ']' '=' Experession ';' ;
+methodDeclaration	:	'public' mtype Identifier '(' ( mtype Identifier ( ',' mtype Identifier )* )? ')' '{' ( varDeclaration )* ( statement )* 'return' expression ';' '}'
+					#dec_method
+					;
 
-Experession
-            : LiteralInteger Temp
-            | 'true' Temp
-            | 'false' Temp
-            | Identifier Temp
-            | 'this' Temp
-            | 'new' 'int' '[' Experession ']' Temp
-            | 'new' Identifier '('')' Temp
-            | '!' Experession Temp
-            | '(' Experession ')' Temp;
+//methodDeclaration   : 'public' mtype Identifier '(' parameters ')' '{' (varDeclaration)* (statement)* 'return' expression ';' '}'
+//                    #dec_method
+//                    ;
 
-Temp 
-            : (Experession ('&&' | '<' | '+' | '-' | '*' ) Experession
-            | '[' Experession ']' Experession
-            | '.' 'length' Experession
-            | '.' Identifier '('(Experession(','Experession)*)?')' Experession)? ;
+//parameters  : (parameterDeclaration (',' parameterDeclaration)*)?
+//            ;
 
+//parameterDeclaration    : mtype Identifier
+//                        ;
 
-Digit : [0-9];
+mtype   : 'int' '[' ']'
+        | 'boolean'
+        | 'int'
+        | Identifier
+        ;
 
-LiteralInteger : Digit+ ;
+statement   : '{' (statement)* '}'
+                #state_lrparents
+            | 'if' '(' expression ')' statement 'else' statement
+                #state_if
+            | 'while' '(' expression ')' statement
+                #state_while
+            | 'System.out.println' '(' expression ')' ';'
+                #state_print
+            | Identifier '=' expression ';'
+                #state_assign
+            | Identifier '[' expression ']' '=' expression ';'
+                #state_array_assign
+            ;
 
-Letter : [a-zA-Z];
+expression  : //expression ('&&' | '<' | '+' | '-' | '*') expression
+                //#expr_op
+            expression '&&' expression
+                #expr_op_and
+            | expression '<' expression
+                #expr_op_less
+            | expression '+' expression
+                #expr_op_plus
+            | expression '-' expression
+                #expr_op_minus
+            | expression '*' expression
+                #expr_op_multi
+            | expression '[' expression ']'
+                #expr_array
+            | expression '.' 'length'
+                #expr_length
+            | expression '.' Identifier '(' (expression (',' expression)* )? ')'
+                #expr_method_calling
+            | Integer
+                #expr_int
+            | Boolean
+                #expr_bool
+            | Identifier
+                #expr_id
+            | 'this'
+                #expr_this
+            | 'new' 'int' '[' expression ']'
+                #expr_int_array
+            | 'new' Identifier '(' ')'
+                #expr_new_array
+            | '!' expression
+                #expr_not
+            | '(' expression ')'
+                #expr_lrparents
+            | expression ('&&' | '<' | '+' | '-' | '*')
+                {self.notifyErrorListeners('Error: missing the RHS of the operator')}
+                #err_miss_RHS
+            | ('&&' | '<' | '+' | '-' | '*') expression
+                {self.notifyErrorListeners('Error: missing the LHS of the operator')}
+                #err_miss_LHS
+            | '(' expression ')' ')'
+                {self.notifyErrorListeners("Error: too many ')'s")}
+                #err_many_rparents
+            | '(' '(' expression ')'
+                {self.notifyErrorListeners("Error: too many '('s")}
+                #err_many_lparents
+            | '(' expression
+                {self.notifyErrorListeners('Error: need right parent closing')}
+                #err_rparent_closing
+            | expression ')'
+                {self.notifyErrorListeners('Error: need left parent closing')}
+                #err_lparent_closing
+            ;
 
+Boolean : 'true'
+        | 'false'
+        ;
 
-Identifier : Letter (Letter | Digit)*;
+Identifier  : [a-zA-Z_][a-zA-Z0-9_]*
+            | [0-9]+[a-zA-Z_][a-zA-Z0-9_]*
+                {self.notifyErrorListeners('Error: identifier starting with digit')}
+            ;
+
+Integer : [0-9]+
+        ;
+
+WS  : [ \t\r\n]+ -> skip
+    ;
+
+LineComment : '//' .*? ('\r')? '\n' -> skip
+            ;
+
+Comment : '/*' .*? '*/' -> skip
+        ;

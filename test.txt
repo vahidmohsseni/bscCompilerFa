@@ -1,8 +1,0 @@
-adad_sahih a = 2;
-Adad_Ashar_bozorg b = 2.1;
-Adad_Ashar_bozorg c = 3.2;
-Adad_Ashar_bozorg d = 0;
-d = b + c;
-agar(a > 1) {
-Bargardoon d;
-}
